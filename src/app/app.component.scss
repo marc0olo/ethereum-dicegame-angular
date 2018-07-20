@@ -1,0 +1,18 @@
+.nav-menu {
+    margin-left: 25px;
+}
+
+.nav-button {
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin: 0 10px 0 0;
+    padding: 0 16px;
+    background: 0 0;
+    line-height: 36px;
+}
+
+mat-toolbar button.active {
+    color: black;
+    background-color: azure;
+}

@@ -1,0 +1,15 @@
+<div class="toolbar">
+    <mat-toolbar color="primary">
+        <span>
+            {{title}}
+        </span>
+        <span class="nav-menu">
+            <button mat-button class="nav-button" *ngFor="let item of navigation" [routerLink]="[item.link]" routerLinkActive="active">
+                {{item.label}}
+            </button>
+        </span>
+    </mat-toolbar>
+</div>
+<div class="content">
+    <router-outlet></router-outlet>
+</div>
