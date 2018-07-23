@@ -6,7 +6,7 @@ import {
     MatToolbarModule
 } from '@angular/material';
 
-import { DiceGameComponent } from './dicegame.component';
+import { PlayComponent } from '../play/play.component';
 import { DescriptionComponent } from '../description/description.component';
 import { StatisticsComponent } from '../statistics/statistics.component';
 import { ChaindataComponent } from '../chaindata/chaindata.component';
@@ -20,13 +20,13 @@ import { ChaindataComponent } from '../chaindata/chaindata.component';
     ],
     declarations: [
         DescriptionComponent,
-        DiceGameComponent,
+        PlayComponent,
         StatisticsComponent,
         ChaindataComponent
     ],
     exports: [
         DescriptionComponent,
-        DiceGameComponent
+        PlayComponent
     ]
 })
-export class DiceGameModule { }
+export class SharedModule { }

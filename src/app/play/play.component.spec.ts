@@ -1,7 +1,8 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { PlayComponent } from '../play/play.component';
+import { PlayComponent } from './play.component';
 
-describe('DiceGameComponent', () => {
+
+describe('PlayComponent', () => {
   let component: PlayComponent;
   let fixture: ComponentFixture<PlayComponent>;
 

@@ -1,15 +1,14 @@
 export class PlayRound {
-
     numberOfPips: number;
-    weiRequired: number;
+    ethRequired: number;
     winner: string;
     second: string;
     third: string;
     placingPhaseActive: boolean;
 
-    constructor(numberOfPips, weiRequired, winner, second, third, placingPhaseActive) {
+    constructor(numberOfPips, ethRequired, winner, second, third, placingPhaseActive) {
         this.numberOfPips = numberOfPips;
-        this.weiRequired = weiRequired;
+        this.ethRequired = ethRequired;
         this.winner = winner;
         this.second = second;
         this.third = third;
