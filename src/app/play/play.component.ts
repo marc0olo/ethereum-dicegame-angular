@@ -1,69 +1,199 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatSnackBar } from '@angular/material';
-import { from } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+import { filter } from 'rxjs/operators';
 
 import { Web3Service } from '../shared/services/web3.service';
 import { DiceGameContractService } from '../shared/services/dicegame_contract.service';
 import { PlayRound } from '../shared/models/playround.model';
+import { LoaderService } from '../shared/services/loader.service';
+
+const CONFIRMATIONS_REQUIRED = 10;
 
 @Component({
   selector: 'app-play',
   templateUrl: './play.component.html',
   styleUrls: ['./play.component.css']
 })
-export class PlayComponent implements OnInit {
+export class PlayComponent implements OnInit, OnDestroy {
+  private subscriptions: Array<any> = new Array();;
+
   accountAddress: string;
   accountBalance: number;
+  contractBalance: number;
   ownerAddress: string;
 
   currentPlayRound: PlayRound;
   reward: number;
+  bet: number;
+
+  managingForm: FormGroup;
+  bettingForm: FormGroup;
 
   constructor(
+    private fb: FormBuilder,
+    private matSnackBar: MatSnackBar,
+    private loaderService: LoaderService,
     private web3Service: Web3Service,
-    private dicegameService: DiceGameContractService,
-    private matSnackBar: MatSnackBar
+    private dicegameService: DiceGameContractService
   ) {
-    console.log('Web3Service: ', web3Service);
-    console.log('DiceGameContractService', dicegameService);
+    this.managingForm = this.fb.group({
+      requiredEth: [0, [
+        Validators.required,
+        Validators.min(0)
+      ]]
+    })
+
+    this.bettingForm = this.fb.group({
+      numberOfPips: [0, [
+        Validators.required,
+        Validators.min(1),
+        Validators.max(6)
+      ]],
+      eth: 0
+    });
   }
 
   async ngOnInit() {
-    this.ownerAddress = await this.dicegameService.getOwner();
-    await this.watchAccount();
+    if (typeof this.web3Service.getWeb3() !== 'undefined') {
+      this.ownerAddress = await this.dicegameService.getOwner();
+      await this.watchAccount();
+    }
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe())
   }
 
   async refreshData() {
+    this.accountBalance = await this.web3Service.getBalance(this.accountAddress);
+    this.contractBalance = await this.web3Service.getBalance(this.dicegameService.getContractAddress());
     this.reward = await this.dicegameService.getRewards(this.accountAddress);
-    console.log(this.reward);
     this.currentPlayRound = await this.dicegameService.getCurrentPlayRound();
-    console.log(this.currentPlayRound);
+    this.bet = await this.dicegameService.getPlayerBetForCurrentPlayRound(this.accountAddress);
+    this.bettingForm.controls.eth.setValue(this.currentPlayRound.ethRequired);
+    this.bettingForm.controls.eth.setValidators([Validators.required, Validators.min(this.getEthRequired())]);
   }
 
-  watchAccount() {
-    this.web3Service.accountsObservable
+  async watchAccount() {
+    let accountSubscription = this.web3Service.accountsObservable
       .pipe(
-        tap((account: string) => {
-          this.accountAddress = account;
-          this.setStatus('Account changed');
-        }),
-        switchMap(() => from(this.web3Service.getBalance(this.accountAddress)))
+        filter(account => account != this.accountAddress)
       )
-      .subscribe(
-        (balance) => this.accountBalance = balance,
-        this.refreshData()
-    );
+      .subscribe(async (account) => {
+        this.accountAddress = account;
+        if (typeof this.accountAddress === 'undefined') {
+          this.setStatus('unlock your metamask account to play');
+          this.accountBalance = undefined;
+        } else {
+          await this.refreshData();
+        }
+      });
+    this.subscriptions.push(accountSubscription);
   }
 
-  async startPlacingPhase() {
-    console.log(this.accountAddress);
-    await this.dicegameService.startPlacingPhase(this.accountAddress, "1");
-    await this.refreshData();
+  isPlacingPhaseActive() {
+    return typeof this.currentPlayRound !== "undefined" && this.currentPlayRound.placingPhaseActive;
+  }
+
+  isOwner() {
+    return typeof this.ownerAddress !== "undefined" && this.ownerAddress === this.accountAddress;
+  }
+
+  getEthRequired() {
+    return this.isPlacingPhaseActive() ? this.currentPlayRound.ethRequired : 0;
+  }
+
+  startPlacingPhase() {
+    this.loaderService.display(true);
+    let requiredEth = this.managingForm.controls.requiredEth.value;
+    let wei = this.web3Service.getWeb3().utils.toWei(requiredEth.toString(), "ether"); // seems like web3 utils currently can only handle strings
+    let transaction = this.dicegameService.getContract().methods.startPlacingPhase(wei).send({ from: this.accountAddress });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('New playround started.');
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
+  }
+
+  closePlacingPhase() {
+    this.loaderService.display(true);
+    let transaction = this.dicegameService.getContract().methods.closePlacingPhase().send({ from: this.accountAddress });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('Playround closed.');
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
+  }
+
+  placeBet() {
+    this.loaderService.display(true);
+    let eth = this.bettingForm.controls.eth.value;
+    let numberOfPips = this.bettingForm.controls.numberOfPips.value;
+    let wei = this.web3Service.getWeb3().utils.toWei(eth.toString(), "ether");
+    let transaction = this.dicegameService.getContract().methods.placeBet(numberOfPips).send({ from: this.accountAddress, value: wei });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('Bet placed.');
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
+  }
+
+  claimReward() {
+    this.loaderService.display(true);
+    let transaction = this.dicegameService.getContract().methods.claimReward().send({ from: this.accountAddress });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('Reward claimed.');
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
   }
 
   setStatus(status) {
     this.matSnackBar.open(status, null, { duration: 3000 });
   }
 
+  handleError(err) {
+    let text;
+    if (err.message.includes('VM Exception while processing transaction: revert')) {
+      text = 'Error: transaction reverted';
+    } else if (err.message.includes('VM Exception while processing transaction: out of gas')) {
+      text = 'Error: out of gas (try again with a higher gas-limit)';
+    } else if (err.message.includes('User denied transaction signature')) {
+      text = 'transaction rejected';
+    } else {
+      text = 'unknown error';
+    }
+    this.loaderService.display(false);
+    this.setStatus(text);
+  }
 }

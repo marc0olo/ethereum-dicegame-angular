@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+
 import { Web3Service } from './web3.service';
 import { PlayRound } from '../models/playround.model';
 
@@ -14,10 +15,16 @@ export class DiceGameContractService {
 
     constructor(private web3Service: Web3Service) {
         this.web3 = this.web3Service.getWeb3();
+        if ( typeof this.web3 !== 'undefined' ) {
+            this.contract = this.web3Service.jsonInterfaceToContract(jsonInterface, this.contractAddress);
+        }
+    }
+
+    bootstrapContract() {
         this.contract = this.web3Service.jsonInterfaceToContract(jsonInterface, this.contractAddress);
     }
 
-    getAddress() {
+    getContractAddress() {
         return this.contractAddress;
     }
 
@@ -26,18 +33,8 @@ export class DiceGameContractService {
         return contractOwner;
     }
 
-    async startPlacingPhase(playerAddress, requiredEth) {
-        let wei = this.web3.utils.toWei(requiredEth, "ether");
-        await this.contract.methods.startPlacingPhase(wei).send({from: playerAddress});
-    }
-
-    async closePlacingPhase() {
-        await this.contract.methods.closePlacingPhase().send();
-    }
-
-    async placeBet(playerAddress, numberOfPips, eth) {
-        let wei = this.web3.utils.fromWei(eth, "ether");
-        await this.contract.methods.placeBet(numberOfPips).sendTransaction({from: playerAddress, value: wei});
+    getContract() {
+        return this.contract;
     }
 
     async getCurrentPlayRound() {
@@ -54,8 +51,8 @@ export class DiceGameContractService {
     }
 
     async getPastPlayRoundCount() {
-        let playRoundCount = await this.contract.methods.pastPlayRoundsCount();
-        return playRoundCount.toNumber();
+        let playRoundCount = await this.contract.methods.pastPlayRoundsCount().call();
+        return playRoundCount;
     }
 
     async getPlayRound(pastRoundId) {
@@ -71,12 +68,13 @@ export class DiceGameContractService {
         return playRound;
     }
 
+    async getPlayerBetForCurrentPlayRound(playerAddress) {
+        let bet = await this.contract.methods.getPlayerBetForCurrentPlayRound(playerAddress).call();
+        return bet;
+    }
+
     async getRewards(playerAddress) {
         let reward = await this.contract.methods.rewards(playerAddress).call();
         return this.web3.utils.fromWei(reward, "ether");
-    }
-
-    async claimReward(playerAddress) {
-        await this.contract.methods.claimReward().send({from: playerAddress});
     }
 }

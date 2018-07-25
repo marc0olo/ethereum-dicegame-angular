@@ -1,20 +1,59 @@
 <mat-card>
   <mat-card-header>
-    <mat-card-title>Contract Owner</mat-card-title>
-    <mat-card-subtitle>{{ownerAddress}}</mat-card-subtitle>
+    <mat-card-title>Balance</mat-card-title>
+    <mat-card-subtitle>{{ accountBalance }} ETH</mat-card-subtitle>
   </mat-card-header>
 </mat-card>
 
 <mat-card>
   <mat-card-header>
-    <mat-card-title>Current address</mat-card-title>
-    <mat-card-subtitle>{{accountAddress}}</mat-card-subtitle>
+    <mat-card-title>Available reward</mat-card-title>
+    <mat-card-subtitle>{{ reward }} ETH</mat-card-subtitle>
   </mat-card-header>
+  <mat-card-content>
+    <button (click)="claimReward()" mat-button [disabled]="reward <= 0 || reward === 'undefined' ">Claim</button>
+  </mat-card-content>
 </mat-card>
 
-<mat-card>
+<mat-card *ngIf="isOwner()">
   <mat-card-header>
-    <mat-card-title>ETH balance</mat-card-title>
-    <mat-card-subtitle>{{accountBalance}}</mat-card-subtitle>
+    <mat-card-title>Manage PlayRound</mat-card-title>
+  </mat-card-header>
+  <form [formGroup]="managingForm" *ngIf="!isPlacingPhaseActive()">
+    <mat-form-field>
+      <mat-label>Required Ether</mat-label>
+      <input matInput value="{{ requiredEth }}" formControlName="requiredEth" type="number" step="0.1">
+    </mat-form-field>
+    <button (click)="startPlacingPhase()" mat-button [disabled]="!managingForm.valid">Start</button>
+  </form>
+  <button (click)="closePlacingPhase()" mat-button *ngIf="isPlacingPhaseActive()">Close</button>
+</mat-card>
+
+<mat-card *ngIf="bet == 0 && isPlacingPhaseActive()">
+  <mat-card-header>
+    <mat-card-title>Place bet</mat-card-title>
+  </mat-card-header>
+  <form [formGroup]="bettingForm">
+    <mat-form-field>
+      <mat-label>Ether</mat-label>
+      <input matInput formControlName="eth" type="number" step="0.1">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Number of pips</mat-label>
+      <input matInput formControlName="numberOfPips" type="number" step="1">
+    </mat-form-field>
+    <button (click)="placeBet()" mat-button [disabled]="!bettingForm.valid">Place bet</button>
+  </form>
+</mat-card>
+<mat-card *ngIf="bet > 0 && isPlacingPhaseActive()">
+  <mat-card-header>
+    <mat-card-title>Your bet (waiting for the dice)</mat-card-title>
+    <mat-card-subtitle>{{ bet }}</mat-card-subtitle>
+  </mat-card-header>
+</mat-card>
+<mat-card *ngIf="!isPlacingPhaseActive()">
+  <mat-card-header>
+    <mat-card-title>PlayRound not active</mat-card-title>
+    <mat-card-subtitle>Waiting for the Owner to start a new PlayRound</mat-card-subtitle>
   </mat-card-header>
 </mat-card>

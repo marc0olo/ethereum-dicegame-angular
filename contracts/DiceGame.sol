@@ -65,7 +65,7 @@ contract DiceGame {
         _;
     }
 
-    modifier destroyConditions() {
+    modifier contractModificationConditions() {
         require(msg.sender == owner);
         require(!playRound.placingPhaseActive);
         _;
@@ -94,6 +94,14 @@ contract DiceGame {
 
     function pastPlayRoundsCount() public view returns (uint) {
         return pastPlayRounds.length;
+    }
+
+    function getPlayerBetForCurrentPlayRound(address playerAddress) public view returns (uint8) {
+        return playRound.bets[playerAddress].numberOfPips;
+    }
+
+    function getPlayerBetForPlayRound(address playerAddress, uint playRoundId) public view returns (uint8) {
+        return pastPlayRounds[playRoundId].bets[playerAddress].numberOfPips;
     }
 
     function _calculatePointsAndRewards() private {
@@ -178,7 +186,11 @@ contract DiceGame {
         playRound.third = address(0);
     }
 
-    function destroy() public destroyConditions {
+    function destroy() public contractModificationConditions {
         selfdestruct(owner);
+    }
+
+    function transferOwnership(address newOwnerAddress) public contractModificationConditions {
+        owner = newOwnerAddress;
     }
 }

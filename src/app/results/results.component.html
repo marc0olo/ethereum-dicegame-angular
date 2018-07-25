@@ -1,0 +1,35 @@
+<mat-table [dataSource]="dataSource">
+
+  <ng-container matColumnDef="no">
+    <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
+    <mat-cell *matCellDef="let i=index">{{i+1}}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="numberOfPips">
+    <mat-header-cell *matHeaderCellDef>Number of pips (result)</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.numberOfPips }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="ethRequired">
+    <mat-header-cell *matHeaderCellDef> ETH required </mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.ethRequired }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="winner">
+    <mat-header-cell *matHeaderCellDef> Winner </mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.winner }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="second">
+    <mat-header-cell *matHeaderCellDef> Second </mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.second }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="third">
+    <mat-header-cell *matHeaderCellDef> Third </mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.third }}</mat-cell>
+  </ng-container>
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+</mat-table>
