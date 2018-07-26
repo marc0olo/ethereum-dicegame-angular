@@ -1,5 +1,5 @@
 {
-  "name": "ethereum-dicegame",
+  "name": "ethereum-dicegame-angular",
   "version": "0.0.1",
   "scripts": {
     "ng": "ng",
@@ -23,8 +23,8 @@
     "@angular/platform-browser": "6.0.9",
     "@angular/platform-browser-dynamic": "6.0.9",
     "@angular/router": "6.0.9",
-    "bignumber.js": "7.2.1",
     "core-js": "2.5.7",
+    "npm": "^6.2.0",
     "rxjs": "6.2.2",
     "zone.js": "0.8.26"
   },
@@ -46,6 +46,7 @@
     "karma-coverage-istanbul-reporter": "2.0.1",
     "karma-jasmine": "1.1.2",
     "karma-jasmine-html-reporter": "1.2.0",
+    "node-sass": "4.9.2",
     "protractor": "5.4.0",
     "truffle": "4.1.13",
     "truffle-contract": "3.0.6",
