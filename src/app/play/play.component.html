@@ -11,7 +11,7 @@
     <mat-card-subtitle>{{ reward }} ETH</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <button (click)="claimReward()" mat-button [disabled]="reward <= 0 || reward === 'undefined' ">Claim</button>
+    <button (click)="claimReward()" mat-button [disabled]="reward <= 0 || isUndefined(reward)">Claim</button>
   </mat-card-content>
 </mat-card>
 

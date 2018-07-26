@@ -226,6 +226,10 @@ export class PlayComponent implements OnInit, OnDestroy {
     });
   }
 
+  isUndefined(value) {
+    return (typeof value === 'undefined');
+  }
+
   setStatus(status) {
     this.matSnackBar.open(status, null, { duration: 3000 });
   }
