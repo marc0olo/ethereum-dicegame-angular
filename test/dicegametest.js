@@ -51,6 +51,23 @@ contract("DiceGame", accounts => {
             assertInvalidOpCode(error);
         }
     });
+    it('should be possible to change gamemaster and gamemaster should be able to open and close a placing-phase', async function () {
+        await diceGame.changeGamemaster(player1, {from: owner});
+        await diceGame.startPlacingPhase(1, {from: player1});
+        await diceGame.placeBet(6, {from: player1, value: 1});
+        await diceGame.placeBet(6, {from: player2, value: 2});
+        await diceGame.placeBet(6, {from: player3, value: 3});
+        await diceGame.closePlacingPhase({from: player1});
+    });
+    it('should NOT be possible destroy contract as gamemaster', async function () {
+        await diceGame.changeGamemaster(player1, {from: owner});
+        try {
+            await diceGame.destroy({from: player1});
+            assert.fail('should fail');
+        } catch(error){
+            assertInvalidOpCode(error);
+        }
+    });
     it('should be possible to start placing-phase as owner', async function () {
         await diceGame.startPlacingPhase(1, {from: owner});
     });

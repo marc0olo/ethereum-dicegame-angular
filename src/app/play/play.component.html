@@ -15,14 +15,28 @@
   </mat-card-content>
 </mat-card>
 
-<mat-card *ngIf="isOwner()">
+<mat-card *ngIf="isOwner() || isGamemaster()">
+  <mat-card-header>
+    <mat-card-title>Manage Contract</mat-card-title>
+  </mat-card-header>
+  <button (click)="destroyContract()" mat-button  *ngIf="isOwner()">Destroy Contract</button>
+  <form [formGroup]="contractForm" *ngIf="isOwner() || isGamemaster()">
+    <mat-form-field>
+      <mat-label>Address</mat-label>
+      <input matInput formControlName="newGamemaster" type="string">
+    </mat-form-field>
+    <button (click)="changeGamemaster()" mat-button [disabled]="!contractForm.valid">Change gamemaster</button>
+  </form>
+</mat-card>
+
+<mat-card *ngIf="isOwner() || isGamemaster()">
   <mat-card-header>
     <mat-card-title>Manage PlayRound</mat-card-title>
   </mat-card-header>
   <form [formGroup]="managingForm" *ngIf="!isPlacingPhaseActive()">
     <mat-form-field>
       <mat-label>Required Ether</mat-label>
-      <input matInput value="{{ requiredEth }}" formControlName="requiredEth" type="number" step="0.1">
+      <input matInput formControlName="requiredEth" type="number" step="0.1">
     </mat-form-field>
     <button (click)="startPlacingPhase()" mat-button [disabled]="!managingForm.valid">Start</button>
   </form>
@@ -54,6 +68,6 @@
 <mat-card *ngIf="!isPlacingPhaseActive()">
   <mat-card-header>
     <mat-card-title>PlayRound not active</mat-card-title>
-    <mat-card-subtitle>Waiting for the Owner to start a new PlayRound</mat-card-subtitle>
+    <mat-card-subtitle>Waiting for the Owner / Gamemaster to start a new PlayRound</mat-card-subtitle>
   </mat-card-header>
 </mat-card>

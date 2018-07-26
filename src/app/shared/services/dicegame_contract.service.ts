@@ -10,7 +10,8 @@ const jsonInterface = require('../../../../build/contracts/DiceGame.json');
 })
 export class DiceGameContractService {
     private web3: any;
-    private contractAddress = '0x8273e4b8ed6c78e252a9fca5563adfcc75c91b2a'; // varies after renewed deployment
+    // ropsten old: 0xEc3F6976bd3A4f851674bb73259d6EAf0C35C16e
+    private contractAddress = '0xf437f240b23e6Aab63e15cD923334816281F6521';
     private contract: any;
 
     constructor(private web3Service: Web3Service) {
@@ -31,6 +32,11 @@ export class DiceGameContractService {
     async getOwner() {
         let contractOwner = await this.contract.methods.owner().call();
         return contractOwner;
+    }
+
+    async getGamemaster() {
+        let gamemaster = await this.contract.methods.gamemaster().call();
+        return gamemaster;
     }
 
     getContract() {

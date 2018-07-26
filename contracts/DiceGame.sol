@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 contract DiceGame {
 
     address public owner;
+    address public gamemaster;
     uint weiBalance;
     mapping(address => uint) public rewards;
     PlayRound public playRound;
@@ -10,6 +11,7 @@ contract DiceGame {
 
     event PlayRoundStarted();
     event BetPlaced(address player, uint numberOfPips, uint weiBalance);
+    event RandomNumberOfPipsGenerated(uint8 numberOfPips);
     event RewardAllocated(address player, uint oldReward, uint newReward);
     event PlayRoundClosed(address winner, address second, address third);
 
@@ -27,11 +29,12 @@ contract DiceGame {
         address winner;
         address second;
         address third;
-        bool placingPhaseActive; // needed to check whether placing bets is allowed
+        bool placingPhaseActive;
     }
 
     constructor() public {
         owner = msg.sender;
+        gamemaster = msg.sender;
     }
 
     modifier placingPhaseActive() {
@@ -48,13 +51,13 @@ contract DiceGame {
     }
 
     modifier startConditions() {
-        require(msg.sender == owner);
+        require(msg.sender == owner || msg.sender == gamemaster);
         require(!playRound.placingPhaseActive);
         _;
     }
 
     modifier closeConditions() {
-        require(msg.sender == owner);
+        require(msg.sender == owner || msg.sender == gamemaster);
         require(playRound.placingPhaseActive);
         require(playRound.players.length >= 3);
         _;
@@ -68,6 +71,11 @@ contract DiceGame {
     modifier contractModificationConditions() {
         require(msg.sender == owner);
         require(!playRound.placingPhaseActive);
+        _;
+    }
+
+    modifier changeGamemasterConditions() {
+        require(msg.sender == owner || msg.sender == gamemaster);
         _;
     }
 
@@ -106,6 +114,7 @@ contract DiceGame {
 
     function _calculatePointsAndRewards() private {
         uint8 random = _generateRandomNumber();
+        emit RandomNumberOfPipsGenerated(random);
         playRound.numberOfPips = random;
         address tmpWinner;
         address tmpSecond;
@@ -192,5 +201,9 @@ contract DiceGame {
 
     function transferOwnership(address newOwnerAddress) public contractModificationConditions {
         owner = newOwnerAddress;
+    }
+
+    function changeGamemaster(address newGamemasterAddress) public changeGamemasterConditions {
+        gamemaster = newGamemasterAddress;
     }
 }

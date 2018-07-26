@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter } from 'rxjs/operators';
 
 import { Web3Service } from '../shared/services/web3.service';
+import { EthereumAddressValidator } from '../shared/validators/EthereumAddressValidator';
 import { DiceGameContractService } from '../shared/services/dicegame_contract.service';
 import { PlayRound } from '../shared/models/playround.model';
 import { LoaderService } from '../shared/services/loader.service';
@@ -23,11 +24,13 @@ export class PlayComponent implements OnInit, OnDestroy {
   accountBalance: number;
   contractBalance: number;
   ownerAddress: string;
+  gamemasterAddress: string;
 
   currentPlayRound: PlayRound;
   reward: number;
   bet: number;
 
+  contractForm: FormGroup;
   managingForm: FormGroup;
   bettingForm: FormGroup;
 
@@ -38,13 +41,17 @@ export class PlayComponent implements OnInit, OnDestroy {
     private web3Service: Web3Service,
     private dicegameService: DiceGameContractService
   ) {
+    this.contractForm = this.fb.group({
+      newGamemaster: [, [
+        EthereumAddressValidator.isEthereumAddress(this.web3Service)
+      ]]
+    })
     this.managingForm = this.fb.group({
       requiredEth: [0, [
         Validators.required,
         Validators.min(0)
       ]]
     })
-
     this.bettingForm = this.fb.group({
       numberOfPips: [0, [
         Validators.required,
@@ -58,6 +65,7 @@ export class PlayComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     if (typeof this.web3Service.getWeb3() !== 'undefined') {
       this.ownerAddress = await this.dicegameService.getOwner();
+      this.gamemasterAddress = await this.dicegameService.getGamemaster();
       await this.watchAccount();
     }
   }
@@ -69,6 +77,7 @@ export class PlayComponent implements OnInit, OnDestroy {
   async refreshData() {
     this.accountBalance = await this.web3Service.getBalance(this.accountAddress);
     this.contractBalance = await this.web3Service.getBalance(this.dicegameService.getContractAddress());
+    this.gamemasterAddress = await this.dicegameService.getGamemaster();
     this.reward = await this.dicegameService.getRewards(this.accountAddress);
     this.currentPlayRound = await this.dicegameService.getCurrentPlayRound();
     this.bet = await this.dicegameService.getPlayerBetForCurrentPlayRound(this.accountAddress);
@@ -99,6 +108,10 @@ export class PlayComponent implements OnInit, OnDestroy {
 
   isOwner() {
     return typeof this.ownerAddress !== "undefined" && this.ownerAddress === this.accountAddress;
+  }
+
+  isGamemaster() {
+    return typeof this.gamemasterAddress !== "undefined" && this.gamemasterAddress === this.accountAddress;
   }
 
   getEthRequired() {
@@ -161,9 +174,44 @@ export class PlayComponent implements OnInit, OnDestroy {
     });
   }
 
+  changeGamemaster() {
+    this.loaderService.display(true);
+    let address = this.contractForm.controls.newGamemaster.value;
+    let transaction = this.dicegameService.getContract().methods.changeGamemaster(address).send({ from: this.accountAddress });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('New gamemaster: ' + address);
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
+  }
+
   claimReward() {
     this.loaderService.display(true);
     let transaction = this.dicegameService.getContract().methods.claimReward().send({ from: this.accountAddress });
+    transaction.on('transactionHash', txHash => {
+    });
+    transaction.on('confirmation', async (confirmationNumber, receipt) => {
+      if (confirmationNumber === CONFIRMATIONS_REQUIRED) {
+        await this.refreshData();
+        this.loaderService.display(false);
+        this.setStatus('Reward claimed.');
+      }
+    });
+    transaction.on('error', err => {
+      this.handleError(err);
+    });
+  }
+
+  destroyContract() {
+    this.loaderService.display(true);
+    let transaction = this.dicegameService.getContract().methods.destroy().send({ from: this.accountAddress });
     transaction.on('transactionHash', txHash => {
     });
     transaction.on('confirmation', async (confirmationNumber, receipt) => {
